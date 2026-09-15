@@ -2,146 +2,125 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>フォトエディタ</title>
   <link rel="icon" type="image/svg+xml" href="./favicon.svg">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      background: #e3f2fd;
-      font-family: 'Hiragino Maru Gothic ProN', 'Rounded Mplus 1c', sans-serif;
+      background: #e9e6df;
+      color: #292724;
+      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", sans-serif;
       display: flex;
-      flex-direction: column;
-      align-items: center;
+      justify-content: center;
       height: 100dvh;
       overflow: hidden;
       user-select: none;
-      padding: 8px;
     }
 
-    h1 {
-      font-size: 1.4rem;
-      color: #0288d1;
-      margin-bottom: 6px;
-      letter-spacing: 0.1em;
-      flex-shrink: 0;
-    }
+    button, input { font-family: inherit; }
 
-    /* ツールバー */
-    #toolbar {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 6px;
-      background: #fff;
-      border-radius: 16px;
-      padding: 7px 12px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.12);
-      margin-bottom: 8px;
+    /* ══ アプリ全体 ═════════════════════════════════════════ */
+    #app {
+      position: relative;
       width: 100%;
-      max-width: 900px;
-      justify-content: center;
-      flex-shrink: 0;
+      max-width: 720px;
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      background: #f5f3ef;
+      overflow: hidden;
     }
 
-    .action-btn {
-      padding: 7px 12px;
-      border-radius: 20px;
-      border: none;
-      font-size: 0.85rem;
-      font-weight: bold;
-      cursor: pointer;
-      box-shadow: 0 3px 8px rgba(0,0,0,0.15);
-      transition: transform 0.1s;
-      white-space: nowrap;
-      display: inline-flex;
+    /* ══ 上部バー ══════════════════════════════════════════ */
+    #topbar {
+      flex-shrink: 0;
+      display: flex;
       align-items: center;
       gap: 4px;
+      padding: max(10px, env(safe-area-inset-top, 0px)) 10px 8px;
+      border-bottom: 1px solid #e4e0d8;
+      background: #fff;
     }
-    .action-btn:hover  { transform: scale(1.05); }
-    .action-btn:active { transform: scale(0.97); }
-    .action-btn:disabled { opacity: 0.35; cursor: default; transform: none; }
 
-    #open-btn      { background: #29b6f6; color: #fff; }
-    #undo-btn      { background: #90a4ae; color: #fff; }
-    #reset-btn     { background: #ff7043; color: #fff; }
-    #download-btn  { background: #ab47bc; color: #fff; }
-    #crop-apply-btn  { background: #4caf50; color: #fff; }
-    #crop-cancel-btn { background: #90a4ae; color: #fff; }
-
-    /* 区切り */
-    .sep { width: 2px; height: 32px; background: #eee; border-radius: 2px; flex-shrink: 0; }
-
-    /* ツール切り替え */
-    #tools { display: flex; gap: 6px; }
-
-    .tool-btn {
-      padding: 7px 14px;
-      border-radius: 20px;
-      border: 2px solid transparent;
-      background: #f1f8fb;
-      color: #0277bd;
-      font-size: 0.85rem;
-      font-weight: bold;
-      cursor: pointer;
-      transition: transform 0.1s, border-color 0.1s, background 0.1s;
+    #topbar h1 {
+      flex: 1 1 auto;
+      min-width: 0;
+      font-size: 0.86rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-align: center;
+      overflow: hidden;
+      text-overflow: ellipsis;
       white-space: nowrap;
     }
-    .tool-btn:hover { transform: scale(1.05); }
-    .tool-btn.selected { border-color: #0288d1; background: #e1f5fe; }
 
-    /* モザイクの粗さ */
-    #mosaic-options {
+    #topbar-right { display: flex; align-items: center; gap: 2px; }
+    .topbar-sep { width: 1px; height: 20px; background: #e4e0d8; margin: 0 4px; flex-shrink: 0; }
+
+    /* アイコンボタン共通 */
+    .icon-btn {
+      width: 32px;
+      height: 32px;
+      flex-shrink: 0;
       display: flex;
       align-items: center;
-      gap: 6px;
-      font-size: 0.82rem;
-      color: #555;
+      justify-content: center;
+      border-radius: 6px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: #292724;
+      cursor: pointer;
+      transition: background 0.12s, opacity 0.12s, color 0.12s, border-color 0.12s;
     }
-    #mosaic-size { accent-color: #0288d1; cursor: pointer; }
-    #mosaic-size-label { min-width: 3.2em; text-align: right; color: #0277bd; font-weight: bold; }
+    .icon-btn svg { width: 17px; height: 17px; }
+    .icon-btn:hover  { background: #f2efe9; }
+    .icon-btn:active { background: #eae6dd; }
+    .icon-btn:disabled { opacity: 0.3; cursor: default; background: transparent; }
 
-    #crop-options { display: flex; gap: 6px; }
+    .icon-btn-primary { background: #292724; color: #fdfcfa; }
+    .icon-btn-primary:hover  { background: #423f3a; }
+    .icon-btn-primary:active { background: #171615; }
+    .icon-btn-primary:disabled { opacity: 0.3; background: #292724; }
 
-    #actions { display: flex; gap: 6px; }
+    .icon-btn-ghost { border-color: #d8d3c8; }
+
+    @media (max-width: 380px) {
+      #topbar h1 { display: none; }
+    }
 
     /* ══ キャンバスエリア ══════════════════════════════════ */
     #canvas-wrap {
       flex: 1 1 auto;
       position: relative;
-      border-radius: 16px;
-      overflow: hidden;
-      box-shadow: 0 6px 20px rgba(0,0,0,0.15);
-      width: 100%;
-      max-width: 900px;
-      background: #fff;
+      background: #faf9f7;
       display: flex;
       align-items: center;
       justify-content: center;
       min-height: 0;
+      overflow: hidden;
     }
 
-    #canvas-wrap.drag-over {
-      outline: 3px dashed #29b6f6;
-      outline-offset: -3px;
-    }
+    #canvas-wrap.drag-over { outline: 2px dashed #292724; outline-offset: -2px; }
 
     #empty-state {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 10px;
-      color: #90a4ae;
+      gap: 14px;
+      color: #b3ada1;
       cursor: pointer;
       padding: 24px;
       text-align: center;
     }
-    #empty-state .icon { font-size: 3rem; }
-    #empty-state p { font-size: 0.9rem; line-height: 1.6; }
+    #empty-state svg { width: 40px; height: 40px; stroke: #c9c3b7; }
+    #empty-state p { font-size: 0.8rem; line-height: 1.8; letter-spacing: 0.02em; color: #9a948a; }
 
-    #canvas-wrap.has-image #empty-state { display: none; }
-    #canvas-wrap:not(.has-image) #canvas-inner { display: none; }
+    #app.has-image #empty-state { display: none; }
+    #app:not(.has-image) #canvas-inner { display: none; }
+    #app:not(.has-image) #tool-panel,
+    #app:not(.has-image) #tool-tabs { display: none; }
 
     #canvas-inner {
       position: relative;
@@ -154,8 +133,14 @@
     #canvas {
       display: block;
       max-width: 100%;
-      max-height: 80dvh;
-      background: repeating-conic-gradient(#f0f0f0 0% 25%, #fff 0% 50%) 50% / 16px 16px;
+      max-height: 100%;
+      background:
+        linear-gradient(45deg, #f0eee8 25%, transparent 25%),
+        linear-gradient(-45deg, #f0eee8 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #f0eee8 75%),
+        linear-gradient(-45deg, transparent 75%, #f0eee8 75%);
+      background-size: 16px 16px;
+      background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
       touch-action: none;
       cursor: crosshair;
     }
@@ -163,57 +148,120 @@
     #selection-box {
       position: absolute;
       display: none;
-      border: 2px dashed #0288d1;
-      background: rgba(41, 182, 246, 0.18);
+      border: 1.5px solid #292724;
+      background: rgba(41, 39, 36, 0.06);
       pointer-events: none;
       left: 0; top: 0; width: 0; height: 0;
     }
 
-    /* ══ トースト ═══════════════════════════════════════════ */
+    #brush-cursor {
+      position: absolute;
+      display: none;
+      border: 1.5px solid #292724;
+      background: rgba(41, 39, 36, 0.06);
+      border-radius: 50%;
+      pointer-events: none;
+      transform: translate(-50%, -50%);
+      left: 0; top: 0; width: 0; height: 0;
+    }
+
+    /* ── トースト（キャンバス内、下部UIに被らない位置） ── */
     #toast {
-      position: fixed;
-      bottom: 24px;
+      position: absolute;
       left: 50%;
+      bottom: 14px;
       transform: translateX(-50%) translateY(80px);
-      background: rgba(0,0,0,0.72);
-      color: #fff;
-      padding: 9px 22px;
-      border-radius: 24px;
-      font-size: 0.95rem;
+      background: #292724;
+      color: #fdfcfa;
+      padding: 8px 18px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      letter-spacing: 0.02em;
       transition: transform 0.3s ease;
       pointer-events: none;
-      z-index: 999;
+      z-index: 20;
+      white-space: nowrap;
     }
     #toast.show { transform: translateX(-50%) translateY(0); }
 
-    /* ══ ヘルプ ════════════════════════════════════════════ */
-    #help-btn {
-      position: fixed;
-      bottom: 16px;
-      right: 16px;
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      border: 2px solid #81d4fa;
-      background: #e1f5fe;
-      color: #0277bd;
-      font-size: 0.95rem;
-      font-weight: bold;
-      cursor: pointer;
+    /* ══ ツール操作パネル ══════════════════════════════════ */
+    #tool-panel {
+      flex-shrink: 0;
+      min-height: 46px;
       display: flex;
       align-items: center;
-      justify-content: center;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-      transition: background 0.15s;
-      z-index: 50;
+      border-top: 1px solid #e4e0d8;
+      background: #fff;
+      padding: 8px 14px;
     }
-    #help-btn:hover { background: #b3e5fc; }
 
+    .tool-panel-content {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .panel-hint { flex: 1 1 auto; font-size: 0.78rem; color: #9a948a; }
+    .panel-actions { display: flex; gap: 6px; margin-left: auto; }
+
+    .slider-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1 1 auto;
+      min-width: 170px;
+      font-size: 0.78rem;
+      color: #6f6a61;
+    }
+    .slider-row input[type="range"] { flex: 1 1 auto; accent-color: #292724; cursor: pointer; }
+    .slider-row span { min-width: 3em; text-align: right; color: #292724; font-variant-numeric: tabular-nums; }
+
+    /* ══ 下部ツールタブ ════════════════════════════════════ */
+    #tool-tabs {
+      flex-shrink: 0;
+      display: flex;
+      overflow-x: auto;
+      border-top: 1px solid #e4e0d8;
+      background: #fff;
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    .tab-btn {
+      position: relative;
+      flex: 1 1 0;
+      min-width: 68px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      padding: 8px 4px 7px;
+      border: none;
+      background: transparent;
+      color: #9a948a;
+      cursor: pointer;
+      transition: color 0.12s;
+    }
+    .tab-btn svg { width: 19px; height: 19px; }
+    .tab-btn span { font-size: 0.65rem; letter-spacing: 0.02em; }
+    .tab-btn:hover { color: #57534c; }
+    .tab-btn.selected { color: #292724; }
+    .tab-btn.selected::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 50%;
+      transform: translateX(-50%);
+      width: 18px; height: 2px;
+      background: #292724;
+    }
+
+    /* ══ ヘルプ ════════════════════════════════════════════ */
     #help-overlay {
       display: none;
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,0.5);
+      background: rgba(41, 39, 36, 0.4);
       overflow-y: auto;
       padding: 16px;
       z-index: 100;
@@ -222,184 +270,256 @@
 
     #help-dialog {
       background: #fff;
-      border: 2px solid #81d4fa;
-      border-radius: 20px;
-      padding: 28px 24px;
-      width: min(480px, 100%);
-      margin: 0 auto;
-      font-family: 'Hiragino Maru Gothic ProN', 'Rounded Mplus 1c', sans-serif;
+      border: 1px solid #e4e0d8;
+      border-radius: 4px;
+      padding: 32px 28px;
+      width: min(460px, 100%);
+      margin: 40px auto;
     }
     #help-dialog h2 {
-      font-size: 1.1rem;
-      color: #0288d1;
-      margin-bottom: 12px;
-      letter-spacing: 0.05em;
+      font-size: 0.95rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      margin-bottom: 14px;
     }
     #help-dialog .notice {
-      background: #e1f5fe;
-      color: #0277bd;
-      border-radius: 10px;
+      background: #f5f3ef;
+      color: #6f6a61;
+      border-radius: 3px;
       padding: 10px 12px;
-      font-size: 0.82rem;
-      line-height: 1.6;
-      margin-bottom: 16px;
+      font-size: 0.76rem;
+      line-height: 1.7;
+      margin-bottom: 18px;
     }
     #help-dialog dl {
       display: grid;
       grid-template-columns: auto 1fr;
-      gap: 8px 16px;
-      font-size: 0.88rem;
-      line-height: 1.6;
-      color: #555;
+      gap: 8px 18px;
+      font-size: 0.8rem;
+      line-height: 1.7;
+      color: #57534c;
     }
     #help-dialog dt {
-      color: #0277bd;
+      color: #292724;
+      font-weight: 600;
       white-space: nowrap;
-      font-weight: bold;
     }
     #help-dialog hr {
       border: none;
-      border-top: 1px solid #e1f5fe;
-      margin: 4px 0;
+      border-top: 1px solid #eeebe4;
+      margin: 2px 0;
       grid-column: 1 / -1;
     }
     #help-close {
-      margin-top: 20px;
+      margin-top: 22px;
       width: 100%;
-      padding: 10px;
-      border-radius: 12px;
-      border: 2px solid #81d4fa;
-      background: #e1f5fe;
-      color: #0277bd;
-      font-size: 0.95rem;
-      font-weight: bold;
+      padding: 9px;
+      border-radius: 3px;
+      border: 1px solid #d8d3c8;
+      background: #fff;
+      color: #292724;
+      font-size: 0.82rem;
+      font-weight: 500;
       cursor: pointer;
-      transition: background 0.15s;
+      transition: background 0.12s;
     }
-    #help-close:hover { background: #b3e5fc; }
+    #help-close:hover { background: #f2efe9; }
 
-    /* ══ モバイル ═══════════════════════════════════════════ */
-    @media (max-width: 500px) {
-      h1 { font-size: 1.1rem; margin-bottom: 4px; }
-      #toolbar { padding: 5px 8px; gap: 4px; border-radius: 12px; margin-bottom: 6px; }
-      .action-btn, .tool-btn { padding: 5px 9px; font-size: 0.78rem; }
-      #mosaic-options { font-size: 0.75rem; }
-    }
+    /* hidden属性は常に最優先で効かせる */
+    [hidden] { display: none !important; }
   </style>
 </head>
 <body>
 
-  <h1>🖼️ かんたんフォトエディタ</h1>
+  <div id="app">
+    <header id="topbar">
+      <label class="icon-btn" id="open-btn" title="開く" aria-label="開く">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/>
+          <path d="M12 12v4M10 14h4"/>
+        </svg>
+        <input type="file" id="file-input" accept="image/*" hidden>
+      </label>
 
-  <div id="toolbar">
-    <label class="action-btn" id="open-btn">📂 開く
-      <input type="file" id="file-input" accept="image/*" hidden>
-    </label>
+      <h1>フォトエディタ</h1>
 
-    <div class="sep"></div>
+      <div id="topbar-right">
+        <button class="icon-btn" id="undo-btn" title="もどす" aria-label="もどす" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 14 4 9l5-5"/>
+            <path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H13"/>
+          </svg>
+        </button>
+        <button class="icon-btn" id="reset-btn" title="元画像" aria-label="元画像" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 11A8 8 0 1 0 19.5 15.5"/>
+            <path d="M20 5v6h-6"/>
+          </svg>
+        </button>
+        <button class="icon-btn" id="download-btn" title="保存" aria-label="保存" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3v12"/>
+            <path d="M7.5 10.5 12 15l4.5-4.5"/>
+            <path d="M4 19h16"/>
+          </svg>
+        </button>
+        <div class="topbar-sep"></div>
+        <button class="icon-btn" id="help-btn" title="使い方" aria-label="使い方">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9.5 9a2.5 2.5 0 0 1 4.8 1c0 1.7-2.3 1.8-2.8 3.4"/>
+            <circle cx="12" cy="17.2" r="0.4" fill="currentColor" stroke="none"/>
+            <circle cx="12" cy="12" r="9"/>
+          </svg>
+        </button>
+        <a class="icon-btn" id="github-link" href="https://daaaaaai.github.io/" target="_blank" rel="noopener" title="GitHub Pages" aria-label="GitHub Pages">
+          <svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true">
+            <path fill-rule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+          </svg>
+        </a>
+      </div>
+    </header>
 
-    <div id="tools">
-      <button class="tool-btn" id="tool-crop" data-tool="crop">✂️ 切り出し</button>
-      <button class="tool-btn" id="tool-mosaic" data-tool="mosaic">🔳 モザイク</button>
+    <div id="canvas-wrap">
+      <div id="empty-state">
+        <svg viewBox="0 0 40 40" fill="none" stroke-width="1.3" xmlns="http://www.w3.org/2000/svg">
+          <rect x="3" y="7" width="34" height="26" rx="2"/>
+          <circle cx="20" cy="20" r="7"/>
+          <path d="M13 7l2.4-3h9.2l2.4 3"/>
+        </svg>
+        <p>ここに画像をドロップ<br>クリックして開く / ペースト（Ctrl+V）</p>
+      </div>
+      <div id="canvas-inner">
+        <canvas id="canvas"></canvas>
+        <div id="selection-box"></div>
+        <div id="brush-cursor"></div>
+      </div>
+      <div id="toast"></div>
     </div>
 
-    <div class="sep"></div>
+    <div id="tool-panel">
+      <div class="tool-panel-content" data-tool="crop" hidden>
+        <span class="panel-hint">ドラッグして範囲を選択</span>
+        <div class="panel-actions">
+          <button class="icon-btn icon-btn-ghost" id="crop-cancel-btn" title="キャンセル" aria-label="キャンセル" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 5l14 14M19 5 5 19"/></svg>
+          </button>
+          <button class="icon-btn icon-btn-primary" id="crop-apply-btn" title="切り出す" aria-label="切り出す" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9 18 20 6"/></svg>
+          </button>
+        </div>
+      </div>
 
-    <div id="mosaic-options" hidden>
-      <label for="mosaic-size">粗さ</label>
-      <input type="range" id="mosaic-size" min="4" max="60" step="2" value="16">
-      <span id="mosaic-size-label">16px</span>
+      <div class="tool-panel-content" data-tool="mosaic" hidden>
+        <div class="slider-row">
+          <label for="mosaic-brush">ブラシ</label>
+          <input type="range" id="mosaic-brush" min="10" max="200" step="5" value="60">
+          <span id="mosaic-brush-label">60px</span>
+        </div>
+        <div class="slider-row">
+          <label for="mosaic-size">粗さ</label>
+          <input type="range" id="mosaic-size" min="4" max="60" step="2" value="16">
+          <span id="mosaic-size-label">16px</span>
+        </div>
+      </div>
     </div>
 
-    <div id="crop-options" hidden>
-      <button class="action-btn" id="crop-apply-btn" disabled>✓ 切り出す</button>
-      <button class="action-btn" id="crop-cancel-btn" disabled>✕ キャンセル</button>
-    </div>
-
-    <div class="sep"></div>
-
-    <div id="actions">
-      <button class="action-btn" id="undo-btn" disabled>↩ もどす</button>
-      <button class="action-btn" id="reset-btn" disabled>🔄 元画像</button>
-      <button class="action-btn" id="download-btn" disabled>📥 保存</button>
-    </div>
+    <nav id="tool-tabs"></nav>
   </div>
-
-  <div id="canvas-wrap">
-    <div id="empty-state">
-      <div class="icon">📷</div>
-      <p>ここに画像をドロップ<br>クリックして開く / 貼り付け(Ctrl+V)</p>
-    </div>
-    <div id="canvas-inner">
-      <canvas id="canvas"></canvas>
-      <div id="selection-box"></div>
-    </div>
-  </div>
-
-  <div id="toast"></div>
-
-  <button id="help-btn">?</button>
 
   <div id="help-overlay">
     <div id="help-dialog">
-      <h2>🖼️ 使い方</h2>
+      <h2>使い方</h2>
       <div class="notice">画像はサーバーに送信されません。すべての処理はこのブラウザの中だけで行われます。</div>
       <dl>
-        <dt>📂 開く</dt>
+        <dt>開く</dt>
         <dd>画像ファイルを選択して読み込みます。ドラッグ&ドロップや、コピーした画像の貼り付け(Ctrl+V / Cmd+V)にも対応しています。</dd>
         <hr>
-        <dt>✂️ 切り出し</dt>
-        <dd>画像の上をドラッグして範囲を選び、「✓ 切り出す」を押すとその部分だけが残ります。選び直すこともできます。</dd>
+        <dt>切り出し</dt>
+        <dd>画像の上をドラッグして範囲を選び、チェックのボタンで確定します。✕でやり直せます。</dd>
         <hr>
-        <dt>🔳 モザイク</dt>
-        <dd>画像の上をドラッグした範囲に自動でモザイクがかかります。「粗さ」スライダーでブロックの大きさを変えられます。</dd>
+        <dt>モザイク</dt>
+        <dd>画像の上をブラシで塗るようにドラッグすると、なぞった部分にモザイクがかかります。「ブラシ」でなぞる太さ、「粗さ」でモザイクの粒の大きさを調整できます。</dd>
         <hr>
-        <dt>↩ もどす</dt>
+        <dt>もどす</dt>
         <dd>直前の操作を取り消します。Cmd（Ctrl）+ Z でも動作します。</dd>
         <hr>
-        <dt>🔄 元画像</dt>
+        <dt>元画像</dt>
         <dd>読み込んだときの状態にすべて戻します。</dd>
         <hr>
-        <dt>📥 保存</dt>
+        <dt>保存</dt>
         <dd>編集した画像を PNG としてダウンロードします。</dd>
       </dl>
-      <hr style="border:none;border-top:1px solid #e1f5fe;margin:20px 0">
+      <hr style="border:none;border-top:1px solid #eeebe4;margin:20px 0">
       <dl>
         <dt>ソースコード</dt>
-        <dd><a href="https://daaaaaai.github.io/" target="_blank" style="color:#0288d1;">daaaaaai.github.io</a></dd>
+        <dd><a href="https://daaaaaai.github.io/" target="_blank" style="color:#292724;">daaaaaai.github.io</a></dd>
       </dl>
       <button id="help-close">とじる</button>
     </div>
   </div>
 
   <script>
+    // ─── ツール定義 ─────────────────────────────────────────
+    // 今後ツールを追加する場合は、ここに1件追加し、
+    // #tool-panel に data-tool="id" の .tool-panel-content を1つ足すだけでよい。
+    const TOOLS = [
+      {
+        id: 'crop',
+        label: '切り出し',
+        icon: '<path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M18 22V8a2 2 0 0 0-2-2H2"/>',
+      },
+      {
+        id: 'mosaic',
+        label: 'モザイク',
+        icon: '<rect x="3" y="3" width="7.5" height="7.5" rx="1"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1"/>',
+      },
+    ];
+
+    const toolTabsEl = document.getElementById('tool-tabs');
+    TOOLS.forEach((t) => {
+      const btn = document.createElement('button');
+      btn.className = 'tab-btn';
+      btn.dataset.tool = t.id;
+      btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${t.icon}</svg><span>${t.label}</span>`;
+      btn.addEventListener('click', () => setTool(t.id));
+      toolTabsEl.appendChild(btn);
+    });
+
     // ─── 状態 ────────────────────────────────────────────
     const MAX_HISTORY = 10;
 
-    let tool            = 'crop';
-    let blockSize        = 16;
-    let imageLoaded       = false;
-    let originalDataURL   = null;
-    let undoStack         = [];
+    let tool               = TOOLS[0].id;
+    let brushSize           = 60;
+    let blockSize           = 16;
+    let imageLoaded          = false;
+    let originalDataURL      = null;
+    let undoStack            = [];
 
-    let selecting        = false;
-    let selStartCss       = null;
-    let pendingCropRect   = null; // {x,y,w,h} in canvas buffer coordinates
+    let selecting           = false;
+    let selStartCss          = null;
+    let pendingCropRect      = null; // {x,y,w,h} in canvas buffer coordinates
+
+    let painting               = false;
+    let lastMosaicBufferPoint   = null; // {x,y} in canvas buffer coordinates
 
     // ─── 要素 ────────────────────────────────────────────
-    const canvas        = document.getElementById('canvas');
-    const ctx            = canvas.getContext('2d');
-    const canvasWrap     = document.getElementById('canvas-wrap');
-    const selectionBox   = document.getElementById('selection-box');
-    const fileInput      = document.getElementById('file-input');
-    const emptyState     = document.getElementById('empty-state');
-    const undoBtn        = document.getElementById('undo-btn');
-    const resetBtn       = document.getElementById('reset-btn');
-    const downloadBtn    = document.getElementById('download-btn');
-    const cropApplyBtn   = document.getElementById('crop-apply-btn');
-    const cropCancelBtn  = document.getElementById('crop-cancel-btn');
-    const mosaicSizeInput = document.getElementById('mosaic-size');
-    const mosaicSizeLabel = document.getElementById('mosaic-size-label');
+    const appEl          = document.getElementById('app');
+    const canvas         = document.getElementById('canvas');
+    const ctx             = canvas.getContext('2d');
+    const canvasWrap      = document.getElementById('canvas-wrap');
+    const selectionBox    = document.getElementById('selection-box');
+    const fileInput       = document.getElementById('file-input');
+    const emptyState      = document.getElementById('empty-state');
+    const undoBtn         = document.getElementById('undo-btn');
+    const resetBtn        = document.getElementById('reset-btn');
+    const downloadBtn     = document.getElementById('download-btn');
+    const cropApplyBtn    = document.getElementById('crop-apply-btn');
+    const cropCancelBtn   = document.getElementById('crop-cancel-btn');
+    const mosaicBrushInput = document.getElementById('mosaic-brush');
+    const mosaicBrushLabel = document.getElementById('mosaic-brush-label');
+    const mosaicSizeInput  = document.getElementById('mosaic-size');
+    const mosaicSizeLabel  = document.getElementById('mosaic-size-label');
+    const brushCursor     = document.getElementById('brush-cursor');
 
     // ─── 画像の読み込み ────────────────────────────────────
     function loadImageFile(file) {
@@ -418,10 +538,10 @@
           originalDataURL = dataURL;
           undoStack = [];
           imageLoaded = true;
-          canvasWrap.classList.add('has-image');
+          appEl.classList.add('has-image');
           clearSelection();
           updateActionButtons();
-          showToast('画像を読み込みました 🖼️');
+          showToast('画像を読み込みました');
         };
         img.onerror = () => showToast('画像を読み込めませんでした');
         img.src = dataURL;
@@ -464,19 +584,22 @@
     });
 
     // ─── ツール切り替え ────────────────────────────────────
-    document.querySelectorAll('.tool-btn').forEach((btn) => {
-      btn.addEventListener('click', () => setTool(btn.dataset.tool));
-    });
-
     function setTool(t) {
       tool = t;
       clearSelection();
-      document.querySelectorAll('.tool-btn').forEach((b) => {
+      stopPainting();
+      document.querySelectorAll('.tab-btn').forEach((b) => {
         b.classList.toggle('selected', b.dataset.tool === t);
       });
-      document.getElementById('mosaic-options').hidden = t !== 'mosaic';
-      document.getElementById('crop-options').hidden   = t !== 'crop';
+      document.querySelectorAll('.tool-panel-content').forEach((p) => {
+        p.hidden = p.dataset.tool !== t;
+      });
     }
+
+    mosaicBrushInput.addEventListener('input', () => {
+      brushSize = parseInt(mosaicBrushInput.value, 10);
+      mosaicBrushLabel.textContent = brushSize + 'px';
+    });
 
     mosaicSizeInput.addEventListener('input', () => {
       blockSize = parseInt(mosaicSizeInput.value, 10);
@@ -510,10 +633,68 @@
       cropCancelBtn.disabled = true;
     }
 
+    function cssToBuffer(cssX, cssY) {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = rect.width  ? canvas.width  / rect.width  : 1;
+      const scaleY = rect.height ? canvas.height / rect.height : 1;
+      return { x: cssX * scaleX, y: cssY * scaleY };
+    }
+
+    function updateBrushCursor(cssX, cssY) {
+      if (tool !== 'mosaic' || !imageLoaded) { brushCursor.style.display = 'none'; return; }
+      const rect = canvas.getBoundingClientRect();
+      if (!rect.width) return;
+      const scale = canvas.width / rect.width;
+      const cssDiameter = brushSize / scale;
+      brushCursor.style.display = 'block';
+      brushCursor.style.left   = cssX + 'px';
+      brushCursor.style.top    = cssY + 'px';
+      brushCursor.style.width  = cssDiameter + 'px';
+      brushCursor.style.height = cssDiameter + 'px';
+    }
+
+    function stopPainting() {
+      painting = false;
+      lastMosaicBufferPoint = null;
+    }
+
+    function stampMosaicAt(bx, by) {
+      const half = brushSize / 2;
+      applyMosaic(Math.round(bx - half), Math.round(by - half), Math.round(brushSize), Math.round(brushSize), blockSize);
+    }
+
+    function paintMosaicTo(bx, by) {
+      if (!lastMosaicBufferPoint) {
+        stampMosaicAt(bx, by);
+      } else {
+        const dx = bx - lastMosaicBufferPoint.x;
+        const dy = by - lastMosaicBufferPoint.y;
+        const dist = Math.hypot(dx, dy);
+        const step = Math.max(2, brushSize / 4);
+        const steps = Math.max(1, Math.ceil(dist / step));
+        for (let i = 1; i <= steps; i++) {
+          const t = i / steps;
+          stampMosaicAt(lastMosaicBufferPoint.x + dx * t, lastMosaicBufferPoint.y + dy * t);
+        }
+      }
+      lastMosaicBufferPoint = { x: bx, y: by };
+    }
+
     function pointerDown(e) {
       if (!imageLoaded) return;
       e.preventDefault();
       const p = getCanvasPoint(e);
+
+      if (tool === 'mosaic') {
+        pushHistory();
+        painting = true;
+        lastMosaicBufferPoint = null;
+        const b = cssToBuffer(p.x, p.y);
+        paintMosaicTo(b.x, b.y);
+        updateBrushCursor(p.x, p.y);
+        return;
+      }
+
       selecting = true;
       pendingCropRect = null;
       cropApplyBtn.disabled  = true;
@@ -523,6 +704,16 @@
     }
 
     function pointerMove(e) {
+      if (tool === 'mosaic') {
+        const p = getCanvasPoint(e);
+        updateBrushCursor(p.x, p.y);
+        if (!painting) return;
+        e.preventDefault();
+        const b = cssToBuffer(p.x, p.y);
+        paintMosaicTo(b.x, b.y);
+        return;
+      }
+
       if (!selecting) return;
       e.preventDefault();
       const p = getCanvasPoint(e);
@@ -534,6 +725,14 @@
     }
 
     function pointerUp() {
+      if (tool === 'mosaic') {
+        if (painting) {
+          stopPainting();
+          showToast('モザイクをかけました');
+        }
+        return;
+      }
+
       if (!selecting) return;
       selecting = false;
 
@@ -554,27 +753,24 @@
 
       if (bw < 2 || bh < 2) { clearSelection(); return; }
 
-      if (tool === 'mosaic') {
-        pushHistory();
-        applyMosaic(bx, by, bw, bh, blockSize);
-        clearSelection();
-        showToast('モザイクをかけました 🔳');
-      } else {
-        pendingCropRect = { x: bx, y: by, w: bw, h: bh };
-        cropApplyBtn.disabled  = false;
-        cropCancelBtn.disabled = false;
-      }
+      pendingCropRect = { x: bx, y: by, w: bw, h: bh };
+      cropApplyBtn.disabled  = false;
+      cropCancelBtn.disabled = false;
     }
 
     const canvasInner = document.getElementById('canvas-inner');
     canvasInner.addEventListener('mousedown', pointerDown);
     window.addEventListener('mousemove', pointerMove);
     window.addEventListener('mouseup', pointerUp);
+    canvasInner.addEventListener('mouseleave', () => { brushCursor.style.display = 'none'; });
     canvasInner.addEventListener('touchstart', pointerDown, { passive: false });
     canvasInner.addEventListener('touchmove', pointerMove, { passive: false });
     canvasInner.addEventListener('touchend', pointerUp);
 
     // ─── モザイク処理 ──────────────────────────────────────
+    const mosaicTmp    = document.createElement('canvas');
+    const mosaicTmpCtx = mosaicTmp.getContext('2d');
+
     function applyMosaic(x, y, w, h, block) {
       x = Math.max(0, Math.min(canvas.width - 1, x));
       y = Math.max(0, Math.min(canvas.height - 1, y));
@@ -584,13 +780,12 @@
       const smallW = Math.max(1, Math.round(w / block));
       const smallH = Math.max(1, Math.round(h / block));
 
-      const tmp = document.createElement('canvas');
-      tmp.width = smallW;
-      tmp.height = smallH;
-      tmp.getContext('2d').drawImage(canvas, x, y, w, h, 0, 0, smallW, smallH);
+      mosaicTmp.width  = smallW;
+      mosaicTmp.height = smallH;
+      mosaicTmpCtx.drawImage(canvas, x, y, w, h, 0, 0, smallW, smallH);
 
       ctx.imageSmoothingEnabled = false;
-      ctx.drawImage(tmp, 0, 0, smallW, smallH, x, y, w, h);
+      ctx.drawImage(mosaicTmp, 0, 0, smallW, smallH, x, y, w, h);
       ctx.imageSmoothingEnabled = true;
     }
 
@@ -610,14 +805,20 @@
       ctx.drawImage(tmp, 0, 0);
 
       clearSelection();
-      showToast('切り出しました ✂️');
+      showToast('切り出しました');
     });
 
     cropCancelBtn.addEventListener('click', clearSelection);
 
     // ─── 履歴（Undo）──────────────────────────────────────
+    // toDataURL(PNGエンコード)ではなくgetImageData(生ピクセルコピー)を使うことで、
+    // ブラシの塗り始めるたびに発生するメインスレッドのブロックを避ける。
     function pushHistory() {
-      undoStack.push({ width: canvas.width, height: canvas.height, dataURL: canvas.toDataURL() });
+      undoStack.push({
+        width: canvas.width,
+        height: canvas.height,
+        imageData: ctx.getImageData(0, 0, canvas.width, canvas.height),
+      });
       if (undoStack.length > MAX_HISTORY) undoStack.shift();
       updateActionButtons();
     }
@@ -625,15 +826,11 @@
     function undo() {
       if (undoStack.length === 0) return;
       const state = undoStack.pop();
-      const img = new Image();
-      img.onload = () => {
-        canvas.width  = state.width;
-        canvas.height = state.height;
-        ctx.drawImage(img, 0, 0);
-        clearSelection();
-        updateActionButtons();
-      };
-      img.src = state.dataURL;
+      canvas.width  = state.width;
+      canvas.height = state.height;
+      ctx.putImageData(state.imageData, 0, 0);
+      clearSelection();
+      updateActionButtons();
     }
 
     undoBtn.addEventListener('click', undo);
@@ -655,7 +852,7 @@
         canvas.height = img.naturalHeight;
         ctx.drawImage(img, 0, 0);
         clearSelection();
-        showToast('元の画像に戻しました 🔄');
+        showToast('元の画像に戻しました');
       };
       img.src = originalDataURL;
     });
@@ -702,7 +899,7 @@
     });
 
     // ─── 初期化 ───────────────────────────────────────────
-    setTool('crop');
+    setTool(TOOLS[0].id);
     updateActionButtons();
   </script>
 </body>
