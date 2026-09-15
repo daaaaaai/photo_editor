@@ -165,6 +165,30 @@
       left: 0; top: 0; width: 0; height: 0;
     }
 
+    #arrow-preview {
+      position: absolute;
+      display: none;
+      left: 0; top: 0;
+      width: 100%; height: 100%;
+      pointer-events: none;
+    }
+
+    #text-overlay {
+      position: absolute;
+      display: none;
+      left: 0; top: 0;
+      min-width: 60px;
+      margin: 0;
+      padding: 2px 4px;
+      border: 1.5px dashed #292724;
+      background: rgba(255, 255, 255, 0.55);
+      outline: none;
+      resize: none;
+      overflow: hidden;
+      line-height: 1.3;
+      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", sans-serif;
+    }
+
     /* ── トースト（キャンバス内、下部UIに被らない位置） ── */
     #toast {
       position: absolute;
@@ -217,6 +241,40 @@
     }
     .slider-row input[type="range"] { flex: 1 1 auto; accent-color: #292724; cursor: pointer; }
     .slider-row span { min-width: 3em; text-align: right; color: #292724; font-variant-numeric: tabular-nums; }
+
+    .color-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.78rem;
+      color: #6f6a61;
+    }
+    .color-row input[type="color"] {
+      width: 28px;
+      height: 28px;
+      padding: 0;
+      border: 1px solid #d8d3c8;
+      border-radius: 5px;
+      background: none;
+      cursor: pointer;
+    }
+
+    .select-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.78rem;
+      color: #6f6a61;
+    }
+    .select-row select {
+      padding: 5px 8px;
+      border: 1px solid #d8d3c8;
+      border-radius: 5px;
+      background: #fff;
+      color: #292724;
+      font-size: 0.78rem;
+      cursor: pointer;
+    }
 
     /* ══ 下部ツールタブ ════════════════════════════════════ */
     #tool-tabs {
@@ -392,6 +450,8 @@
         <canvas id="canvas"></canvas>
         <div id="selection-box"></div>
         <div id="brush-cursor"></div>
+        <canvas id="arrow-preview"></canvas>
+        <textarea id="text-overlay" rows="1"></textarea>
       </div>
       <div id="toast"></div>
     </div>
@@ -421,6 +481,67 @@
           <span id="mosaic-size-label">16px</span>
         </div>
       </div>
+
+      <div class="tool-panel-content" data-tool="brightness" hidden>
+        <div class="slider-row">
+          <label for="brightness-input">明るさ</label>
+          <input type="range" id="brightness-input" min="-100" max="100" step="5" value="0">
+          <span id="brightness-label">0</span>
+        </div>
+        <div class="slider-row">
+          <label for="contrast-input">コントラスト</label>
+          <input type="range" id="contrast-input" min="-100" max="100" step="5" value="0">
+          <span id="contrast-label">0</span>
+        </div>
+        <div class="panel-actions">
+          <button class="icon-btn icon-btn-ghost" id="brightness-cancel-btn" title="キャンセル" aria-label="キャンセル" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 5l14 14M19 5 5 19"/></svg>
+          </button>
+          <button class="icon-btn icon-btn-primary" id="brightness-apply-btn" title="適用" aria-label="適用" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9 18 20 6"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="tool-panel-content" data-tool="text" hidden>
+        <label class="select-row">
+          書体
+          <select id="text-font-input">
+            <option value="gothic">ゴシック</option>
+            <option value="mincho">明朝</option>
+          </select>
+        </label>
+        <div class="slider-row">
+          <label for="text-size-input">サイズ</label>
+          <input type="range" id="text-size-input" min="12" max="96" step="2" value="28">
+          <span id="text-size-label">28px</span>
+        </div>
+        <label class="color-row">
+          色
+          <input type="color" id="text-color-input" value="#e0245e">
+        </label>
+        <div class="panel-actions">
+          <button class="icon-btn icon-btn-ghost" id="text-cancel-btn" title="キャンセル" aria-label="キャンセル" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 5l14 14M19 5 5 19"/></svg>
+          </button>
+          <button class="icon-btn icon-btn-primary" id="text-apply-btn" title="確定" aria-label="確定" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9 18 20 6"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="tool-panel-content" data-tool="arrow" hidden>
+        <span class="panel-hint">ドラッグして矢印を描く</span>
+        <div class="slider-row">
+          <label for="arrow-thickness-input">太さ</label>
+          <input type="range" id="arrow-thickness-input" min="2" max="20" step="1" value="4">
+          <span id="arrow-thickness-label">4px</span>
+        </div>
+        <label class="color-row">
+          色
+          <input type="color" id="arrow-color-input" value="#e0245e">
+        </label>
+      </div>
     </div>
 
     <nav id="tool-tabs"></nav>
@@ -439,6 +560,15 @@
         <hr>
         <dt>モザイク</dt>
         <dd>画像の上をブラシで塗るようにドラッグすると、なぞった部分にモザイクがかかります。「ブラシ」でなぞる太さ、「粗さ」でモザイクの粒の大きさを調整できます。</dd>
+        <hr>
+        <dt>明るさ</dt>
+        <dd>「明るさ」「コントラスト」のスライダーで見た目を調整し、チェックのボタンで確定します。✕でやり直せます。</dd>
+        <hr>
+        <dt>テキスト</dt>
+        <dd>画像の上をタップ/クリックすると文字を入力できます。「書体」「サイズ」「色」を選び、チェックのボタンか Enter で確定します。✕やEscでキャンセルできます。</dd>
+        <hr>
+        <dt>矢印</dt>
+        <dd>画像の上をドラッグすると矢印を描けます。「太さ」「色」を調整できます。</dd>
         <hr>
         <dt>もどす</dt>
         <dd>直前の操作を取り消します。Cmd（Ctrl）+ Z でも動作します。</dd>
@@ -473,6 +603,21 @@
         label: 'モザイク',
         icon: '<rect x="3" y="3" width="7.5" height="7.5" rx="1"/><rect x="13.5" y="3" width="7.5" height="7.5" rx="1"/><rect x="3" y="13.5" width="7.5" height="7.5" rx="1"/><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1"/>',
       },
+      {
+        id: 'brightness',
+        label: '明るさ',
+        icon: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2.5M12 19.5V22M4.2 4.2l1.8 1.8M18 18l1.8 1.8M2 12h2.5M19.5 12H22M4.2 19.8 6 18M18 6l1.8-1.8"/>',
+      },
+      {
+        id: 'text',
+        label: 'テキスト',
+        icon: '<path d="M4 6h16M12 6v14"/>',
+      },
+      {
+        id: 'arrow',
+        label: '矢印',
+        icon: '<path d="M5 19 19 5"/><path d="M9 5h10v10"/>',
+      },
     ];
 
     const toolTabsEl = document.getElementById('tool-tabs');
@@ -502,6 +647,26 @@
     let painting               = false;
     let lastMosaicBufferPoint   = null; // {x,y} in canvas buffer coordinates
 
+    let brightnessValue = 0;
+    let contrastValue   = 0;
+
+    const TEXT_FONT_STACKS = {
+      gothic: '-apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", sans-serif',
+      mincho: '"Hiragino Mincho ProN", "Yu Mincho", "Noto Serif JP", serif',
+    };
+
+    let textEditing   = false;
+    let textBufferPos = null; // {x,y} in canvas buffer coordinates
+    let textFontSize  = 28;
+    let textFont      = 'gothic';
+    let textColor     = '#e0245e';
+
+    let arrowDragging     = false;
+    let arrowStartCss     = null; // {x,y} in css coordinates
+    let arrowPreviewScale = 1;
+    let arrowThickness    = 4;
+    let arrowColor        = '#e0245e';
+
     // ─── 要素 ────────────────────────────────────────────
     const appEl          = document.getElementById('app');
     const canvas         = document.getElementById('canvas');
@@ -520,6 +685,27 @@
     const mosaicSizeInput  = document.getElementById('mosaic-size');
     const mosaicSizeLabel  = document.getElementById('mosaic-size-label');
     const brushCursor     = document.getElementById('brush-cursor');
+
+    const brightnessInput     = document.getElementById('brightness-input');
+    const brightnessLabel     = document.getElementById('brightness-label');
+    const contrastInput       = document.getElementById('contrast-input');
+    const contrastLabel       = document.getElementById('contrast-label');
+    const brightnessApplyBtn  = document.getElementById('brightness-apply-btn');
+    const brightnessCancelBtn = document.getElementById('brightness-cancel-btn');
+
+    const textOverlay    = document.getElementById('text-overlay');
+    const textFontInput  = document.getElementById('text-font-input');
+    const textSizeInput  = document.getElementById('text-size-input');
+    const textSizeLabel  = document.getElementById('text-size-label');
+    const textColorInput = document.getElementById('text-color-input');
+    const textApplyBtn   = document.getElementById('text-apply-btn');
+    const textCancelBtn  = document.getElementById('text-cancel-btn');
+
+    const arrowPreview        = document.getElementById('arrow-preview');
+    const arrowPreviewCtx     = arrowPreview.getContext('2d');
+    const arrowThicknessInput = document.getElementById('arrow-thickness-input');
+    const arrowThicknessLabel = document.getElementById('arrow-thickness-label');
+    const arrowColorInput     = document.getElementById('arrow-color-input');
 
     // ─── 画像の読み込み ────────────────────────────────────
     function loadImageFile(file) {
@@ -588,6 +774,9 @@
       tool = t;
       clearSelection();
       stopPainting();
+      cancelAdjustments();
+      cancelText();
+      stopArrowDragging();
       document.querySelectorAll('.tab-btn').forEach((b) => {
         b.classList.toggle('selected', b.dataset.tool === t);
       });
@@ -606,10 +795,65 @@
       mosaicSizeLabel.textContent = blockSize + 'px';
     });
 
+    brightnessInput.addEventListener('input', () => {
+      brightnessValue = parseInt(brightnessInput.value, 10);
+      brightnessLabel.textContent = brightnessValue;
+      previewAdjustments();
+    });
+
+    contrastInput.addEventListener('input', () => {
+      contrastValue = parseInt(contrastInput.value, 10);
+      contrastLabel.textContent = contrastValue;
+      previewAdjustments();
+    });
+
+    brightnessApplyBtn.addEventListener('click', applyAdjustments);
+    brightnessCancelBtn.addEventListener('click', cancelAdjustments);
+
+    textFontInput.addEventListener('change', () => {
+      textFont = textFontInput.value;
+      updateTextOverlayStyle();
+    });
+
+    textSizeInput.addEventListener('input', () => {
+      textFontSize = parseInt(textSizeInput.value, 10);
+      textSizeLabel.textContent = textFontSize + 'px';
+      updateTextOverlayStyle();
+    });
+
+    textColorInput.addEventListener('input', () => {
+      textColor = textColorInput.value;
+      updateTextOverlayStyle();
+    });
+
+    textOverlay.addEventListener('input', autoResizeTextOverlay);
+    textOverlay.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        commitText();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        cancelText();
+      }
+    });
+    textApplyBtn.addEventListener('click', commitText);
+    textCancelBtn.addEventListener('click', cancelText);
+
+    arrowThicknessInput.addEventListener('input', () => {
+      arrowThickness = parseInt(arrowThicknessInput.value, 10);
+      arrowThicknessLabel.textContent = arrowThickness + 'px';
+    });
+
+    arrowColorInput.addEventListener('input', () => {
+      arrowColor = arrowColorInput.value;
+    });
+
     // ─── 範囲選択 ─────────────────────────────────────────
     function getCanvasPoint(e) {
       const rect = canvas.getBoundingClientRect();
-      const src  = e.touches ? e.touches[0] : e;
+      const src  = (e.touches && e.touches.length) ? e.touches[0]
+                 : (e.changedTouches && e.changedTouches.length) ? e.changedTouches[0]
+                 : e;
       let x = src.clientX - rect.left;
       let y = src.clientY - rect.top;
       x = Math.max(0, Math.min(rect.width, x));
@@ -681,6 +925,7 @@
     }
 
     function pointerDown(e) {
+      if (e.target === textOverlay) return;
       if (!imageLoaded) return;
       e.preventDefault();
       const p = getCanvasPoint(e);
@@ -695,12 +940,30 @@
         return;
       }
 
-      selecting = true;
-      pendingCropRect = null;
-      cropApplyBtn.disabled  = true;
-      cropCancelBtn.disabled = true;
-      selStartCss = { x: p.x, y: p.y };
-      updateSelectionBoxCss(p.x, p.y, 0, 0);
+      if (tool === 'crop') {
+        selecting = true;
+        pendingCropRect = null;
+        cropApplyBtn.disabled  = true;
+        cropCancelBtn.disabled = true;
+        selStartCss = { x: p.x, y: p.y };
+        updateSelectionBoxCss(p.x, p.y, 0, 0);
+        return;
+      }
+
+      if (tool === 'text') {
+        if (textEditing) commitText();
+        const b = cssToBuffer(p.x, p.y);
+        startTextAt(p.x, p.y, b.x, b.y);
+        return;
+      }
+
+      if (tool === 'arrow') {
+        resizeArrowPreview();
+        arrowDragging = true;
+        arrowStartCss = { x: p.x, y: p.y };
+        arrowPreview.style.display = 'block';
+        return;
+      }
     }
 
     function pointerMove(e) {
@@ -714,17 +977,29 @@
         return;
       }
 
-      if (!selecting) return;
-      e.preventDefault();
-      const p = getCanvasPoint(e);
-      const x = Math.min(selStartCss.x, p.x);
-      const y = Math.min(selStartCss.y, p.y);
-      const w = Math.abs(p.x - selStartCss.x);
-      const h = Math.abs(p.y - selStartCss.y);
-      updateSelectionBoxCss(x, y, w, h);
+      if (tool === 'crop') {
+        if (!selecting) return;
+        e.preventDefault();
+        const p = getCanvasPoint(e);
+        const x = Math.min(selStartCss.x, p.x);
+        const y = Math.min(selStartCss.y, p.y);
+        const w = Math.abs(p.x - selStartCss.x);
+        const h = Math.abs(p.y - selStartCss.y);
+        updateSelectionBoxCss(x, y, w, h);
+        return;
+      }
+
+      if (tool === 'arrow') {
+        if (!arrowDragging) return;
+        e.preventDefault();
+        const p = getCanvasPoint(e);
+        arrowPreviewCtx.clearRect(0, 0, arrowPreview.width, arrowPreview.height);
+        drawArrow(arrowPreviewCtx, arrowStartCss.x, arrowStartCss.y, p.x, p.y, arrowColor, arrowThickness / arrowPreviewScale);
+        return;
+      }
     }
 
-    function pointerUp() {
+    function pointerUp(e) {
       if (tool === 'mosaic') {
         if (painting) {
           stopPainting();
@@ -733,29 +1008,48 @@
         return;
       }
 
-      if (!selecting) return;
-      selecting = false;
+      if (tool === 'crop') {
+        if (!selecting) return;
+        selecting = false;
 
-      const cssX = parseFloat(selectionBox.style.left)   || 0;
-      const cssY = parseFloat(selectionBox.style.top)    || 0;
-      const cssW = parseFloat(selectionBox.style.width)  || 0;
-      const cssH = parseFloat(selectionBox.style.height) || 0;
+        const cssX = parseFloat(selectionBox.style.left)   || 0;
+        const cssY = parseFloat(selectionBox.style.top)    || 0;
+        const cssW = parseFloat(selectionBox.style.width)  || 0;
+        const cssH = parseFloat(selectionBox.style.height) || 0;
 
-      const rect = canvas.getBoundingClientRect();
-      if (!rect.width || !rect.height) { clearSelection(); return; }
+        const rect = canvas.getBoundingClientRect();
+        if (!rect.width || !rect.height) { clearSelection(); return; }
 
-      const scaleX = canvas.width  / rect.width;
-      const scaleY = canvas.height / rect.height;
-      const bx = Math.round(cssX * scaleX);
-      const by = Math.round(cssY * scaleY);
-      const bw = Math.round(cssW * scaleX);
-      const bh = Math.round(cssH * scaleY);
+        const scaleX = canvas.width  / rect.width;
+        const scaleY = canvas.height / rect.height;
+        const bx = Math.round(cssX * scaleX);
+        const by = Math.round(cssY * scaleY);
+        const bw = Math.round(cssW * scaleX);
+        const bh = Math.round(cssH * scaleY);
 
-      if (bw < 2 || bh < 2) { clearSelection(); return; }
+        if (bw < 2 || bh < 2) { clearSelection(); return; }
 
-      pendingCropRect = { x: bx, y: by, w: bw, h: bh };
-      cropApplyBtn.disabled  = false;
-      cropCancelBtn.disabled = false;
+        pendingCropRect = { x: bx, y: by, w: bw, h: bh };
+        cropApplyBtn.disabled  = false;
+        cropCancelBtn.disabled = false;
+        return;
+      }
+
+      if (tool === 'arrow') {
+        if (!arrowDragging) return;
+        const p = getCanvasPoint(e);
+        const start = cssToBuffer(arrowStartCss.x, arrowStartCss.y);
+        const end   = cssToBuffer(p.x, p.y);
+        stopArrowDragging();
+
+        const dist = Math.hypot(end.x - start.x, end.y - start.y);
+        if (dist >= 4) {
+          pushHistory();
+          drawArrow(ctx, start.x, start.y, end.x, end.y, arrowColor, arrowThickness);
+          showToast('矢印を描きました');
+        }
+        return;
+      }
     }
 
     const canvasInner = document.getElementById('canvas-inner');
@@ -798,6 +1092,159 @@
       ctx.imageSmoothingEnabled = false;
       ctx.drawImage(mosaicTmp, 0, 0, smallW, smallH, x, y, w, h);
       ctx.imageSmoothingEnabled = true;
+    }
+
+    // ─── 明るさ・コントラスト ───────────────────────────────
+    // CSSフィルタで即座にプレビューし、確定時にだけピクセルへ焼き込む。
+    function buildAdjustFilter() {
+      return `brightness(${100 + brightnessValue}%) contrast(${100 + contrastValue}%)`;
+    }
+
+    function previewAdjustments() {
+      if (!imageLoaded) return;
+      canvas.style.filter = buildAdjustFilter();
+      const hasChange = brightnessValue !== 0 || contrastValue !== 0;
+      brightnessApplyBtn.disabled  = !hasChange;
+      brightnessCancelBtn.disabled = !hasChange;
+    }
+
+    function cancelAdjustments() {
+      canvas.style.filter = '';
+      brightnessValue = 0;
+      contrastValue   = 0;
+      brightnessInput.value = 0;
+      contrastInput.value   = 0;
+      brightnessLabel.textContent = '0';
+      contrastLabel.textContent   = '0';
+      brightnessApplyBtn.disabled  = true;
+      brightnessCancelBtn.disabled = true;
+    }
+
+    function applyAdjustments() {
+      if (brightnessValue === 0 && contrastValue === 0) return;
+      pushHistory();
+
+      const snapshot = document.createElement('canvas');
+      snapshot.width  = canvas.width;
+      snapshot.height = canvas.height;
+      snapshot.getContext('2d').drawImage(canvas, 0, 0);
+
+      canvas.style.filter = '';
+      ctx.filter = buildAdjustFilter();
+      ctx.drawImage(snapshot, 0, 0);
+      ctx.filter = 'none';
+
+      cancelAdjustments();
+      showToast('明るさを調整しました');
+    }
+
+    // ─── テキスト ─────────────────────────────────────────
+    function textCssFontSize() {
+      const rect = canvas.getBoundingClientRect();
+      const scale = rect.width ? canvas.width / rect.width : 1;
+      return textFontSize / scale;
+    }
+
+    function updateTextOverlayStyle() {
+      textOverlay.style.color = textColor;
+      textOverlay.style.fontSize = textCssFontSize() + 'px';
+      textOverlay.style.fontFamily = TEXT_FONT_STACKS[textFont];
+    }
+
+    function autoResizeTextOverlay() {
+      textOverlay.style.height = 'auto';
+      textOverlay.style.height = textOverlay.scrollHeight + 'px';
+    }
+
+    function startTextAt(cssX, cssY, bx, by) {
+      textEditing = true;
+      textBufferPos = { x: bx, y: by };
+      textOverlay.value = '';
+      textOverlay.style.left  = cssX + 'px';
+      textOverlay.style.top   = cssY + 'px';
+      const rect = canvas.getBoundingClientRect();
+      textOverlay.style.width = Math.max(80, Math.min(240, rect.width - cssX - 4)) + 'px';
+      updateTextOverlayStyle();
+      autoResizeTextOverlay();
+      textOverlay.style.display = 'block';
+      textApplyBtn.disabled  = false;
+      textCancelBtn.disabled = false;
+      textOverlay.focus();
+    }
+
+    function hideTextOverlay() {
+      textEditing = false;
+      textBufferPos = null;
+      textOverlay.style.display = 'none';
+      textOverlay.value = '';
+      textApplyBtn.disabled  = true;
+      textCancelBtn.disabled = true;
+    }
+
+    function commitText() {
+      if (!textEditing) return;
+      const value = textOverlay.value;
+      if (value.trim() === '') { hideTextOverlay(); return; }
+
+      pushHistory();
+      const lines = value.split('\n');
+      ctx.fillStyle = textColor;
+      ctx.font = `${textFontSize}px ${TEXT_FONT_STACKS[textFont]}`;
+      ctx.textBaseline = 'top';
+      const lineHeight = Math.round(textFontSize * 1.3);
+      lines.forEach((line, i) => ctx.fillText(line, textBufferPos.x, textBufferPos.y + i * lineHeight));
+
+      hideTextOverlay();
+      showToast('テキストを追加しました');
+    }
+
+    function cancelText() {
+      hideTextOverlay();
+    }
+
+    // ─── 矢印 ─────────────────────────────────────────────
+    function drawArrow(targetCtx, x1, y1, x2, y2, color, thickness) {
+      targetCtx.save();
+      targetCtx.strokeStyle = color;
+      targetCtx.fillStyle   = color;
+      targetCtx.lineWidth   = thickness;
+      targetCtx.lineCap     = 'round';
+      targetCtx.lineJoin    = 'round';
+
+      targetCtx.beginPath();
+      targetCtx.moveTo(x1, y1);
+      targetCtx.lineTo(x2, y2);
+      targetCtx.stroke();
+
+      const headLength = Math.max(10, thickness * 3.5);
+      const headAngle  = Math.PI / 7;
+      const angle      = Math.atan2(y2 - y1, x2 - x1);
+      const hx1 = x2 - headLength * Math.cos(angle - headAngle);
+      const hy1 = y2 - headLength * Math.sin(angle - headAngle);
+      const hx2 = x2 - headLength * Math.cos(angle + headAngle);
+      const hy2 = y2 - headLength * Math.sin(angle + headAngle);
+
+      targetCtx.beginPath();
+      targetCtx.moveTo(x2, y2);
+      targetCtx.lineTo(hx1, hy1);
+      targetCtx.lineTo(hx2, hy2);
+      targetCtx.closePath();
+      targetCtx.fill();
+      targetCtx.restore();
+    }
+
+    function resizeArrowPreview() {
+      const rect = canvas.getBoundingClientRect();
+      arrowPreview.width  = Math.max(1, Math.round(rect.width));
+      arrowPreview.height = Math.max(1, Math.round(rect.height));
+      arrowPreviewScale = rect.width ? canvas.width / rect.width : 1;
+    }
+
+    function stopArrowDragging() {
+      arrowDragging = false;
+      arrowStartCss = null;
+      arrowPreview.style.display = 'none';
+      arrowPreviewCtx.clearRect(0, 0, arrowPreview.width, arrowPreview.height);
     }
 
     // ─── 切り出し ─────────────────────────────────────────
