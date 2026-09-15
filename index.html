@@ -259,6 +259,23 @@
       cursor: pointer;
     }
 
+    .select-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.78rem;
+      color: #6f6a61;
+    }
+    .select-row select {
+      padding: 5px 8px;
+      border: 1px solid #d8d3c8;
+      border-radius: 5px;
+      background: #fff;
+      color: #292724;
+      font-size: 0.78rem;
+      cursor: pointer;
+    }
+
     /* ══ 下部ツールタブ ════════════════════════════════════ */
     #tool-tabs {
       flex-shrink: 0;
@@ -487,6 +504,15 @@
       </div>
 
       <div class="tool-panel-content" data-tool="text" hidden>
+        <label class="select-row">
+          書体
+          <select id="text-font-input">
+            <option value="gothic">ゴシック</option>
+            <option value="mincho">明朝</option>
+            <option value="rounded">丸ゴシック</option>
+            <option value="mono">等幅</option>
+          </select>
+        </label>
         <div class="slider-row">
           <label for="text-size-input">サイズ</label>
           <input type="range" id="text-size-input" min="12" max="96" step="2" value="28">
@@ -541,7 +567,7 @@
         <dd>「明るさ」「コントラスト」のスライダーで見た目を調整し、チェックのボタンで確定します。✕でやり直せます。</dd>
         <hr>
         <dt>テキスト</dt>
-        <dd>画像の上をタップ/クリックすると文字を入力できます。「サイズ」「色」を選び、チェックのボタンか Enter で確定します。✕やEscでキャンセルできます。</dd>
+        <dd>画像の上をタップ/クリックすると文字を入力できます。「書体」「サイズ」「色」を選び、チェックのボタンか Enter で確定します。✕やEscでキャンセルできます。</dd>
         <hr>
         <dt>矢印</dt>
         <dd>画像の上をドラッグすると矢印を描けます。「太さ」「色」を調整できます。</dd>
@@ -626,9 +652,17 @@
     let brightnessValue = 0;
     let contrastValue   = 0;
 
+    const TEXT_FONT_STACKS = {
+      gothic:  '-apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", sans-serif',
+      mincho:  '"Hiragino Mincho ProN", "Yu Mincho", "Noto Serif JP", serif',
+      rounded: '"Hiragino Maru Gothic ProN", "M PLUS Rounded 1c", "Noto Sans JP", sans-serif',
+      mono:    '"SFMono-Regular", Consolas, Menlo, "Noto Sans Mono CJK JP", monospace',
+    };
+
     let textEditing   = false;
     let textBufferPos = null; // {x,y} in canvas buffer coordinates
     let textFontSize  = 28;
+    let textFont      = 'gothic';
     let textColor     = '#e0245e';
 
     let arrowDragging     = false;
@@ -664,6 +698,7 @@
     const brightnessCancelBtn = document.getElementById('brightness-cancel-btn');
 
     const textOverlay    = document.getElementById('text-overlay');
+    const textFontInput  = document.getElementById('text-font-input');
     const textSizeInput  = document.getElementById('text-size-input');
     const textSizeLabel  = document.getElementById('text-size-label');
     const textColorInput = document.getElementById('text-color-input');
@@ -778,6 +813,11 @@
 
     brightnessApplyBtn.addEventListener('click', applyAdjustments);
     brightnessCancelBtn.addEventListener('click', cancelAdjustments);
+
+    textFontInput.addEventListener('change', () => {
+      textFont = textFontInput.value;
+      updateTextOverlayStyle();
+    });
 
     textSizeInput.addEventListener('input', () => {
       textFontSize = parseInt(textSizeInput.value, 10);
@@ -1112,6 +1152,7 @@
     function updateTextOverlayStyle() {
       textOverlay.style.color = textColor;
       textOverlay.style.fontSize = textCssFontSize() + 'px';
+      textOverlay.style.fontFamily = TEXT_FONT_STACKS[textFont];
     }
 
     function autoResizeTextOverlay() {
@@ -1152,7 +1193,7 @@
       pushHistory();
       const lines = value.split('\n');
       ctx.fillStyle = textColor;
-      ctx.font = `${textFontSize}px -apple-system, "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif`;
+      ctx.font = `${textFontSize}px ${TEXT_FONT_STACKS[textFont]}`;
       ctx.textBaseline = 'top';
       const lineHeight = Math.round(textFontSize * 1.3);
       lines.forEach((line, i) => ctx.fillText(line, textBufferPos.x, textBufferPos.y + i * lineHeight));
