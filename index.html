@@ -777,6 +777,17 @@
       w = Math.max(1, Math.min(canvas.width - x, w));
       h = Math.max(1, Math.min(canvas.height - y, h));
 
+      // ブラシの位置に関わらずタイルの継ぎ目が揃うよう、キャンバス全体で
+      // 固定されたブロック格子（(0,0)基準）にスタンプ範囲を合わせる。
+      const gx0 = Math.floor(x / block) * block;
+      const gy0 = Math.floor(y / block) * block;
+      const gx1 = Math.min(canvas.width,  Math.ceil((x + w) / block) * block);
+      const gy1 = Math.min(canvas.height, Math.ceil((y + h) / block) * block);
+      x = gx0;
+      y = gy0;
+      w = gx1 - gx0;
+      h = gy1 - gy0;
+
       const smallW = Math.max(1, Math.round(w / block));
       const smallH = Math.max(1, Math.round(h / block));
 
