@@ -173,18 +173,51 @@
       pointer-events: none;
     }
 
-    #text-overlay {
+    #text-box {
       position: absolute;
       display: none;
       left: 0; top: 0;
-      min-width: 60px;
+    }
+
+    /* 文字入力そのものを邪魔しないよう、移動は専用のつまみで行う */
+    #text-drag-handle {
+      position: absolute;
+      left: -1.5px;
+      top: -1px;
+      transform: translateY(-100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 30px;
+      height: 24px;
+      border-radius: 6px 6px 0 0;
+      background: #292724;
+      color: #fdfcfa;
+      cursor: grab;
+      touch-action: none;
+    }
+    #text-drag-handle:active { cursor: grabbing; }
+
+    /* 枠が画像の上端にあると、つまみが上に出て見切れる。その場合は下へ回す */
+    #text-drag-handle.below {
+      top: auto;
+      bottom: -1px;
+      transform: translateY(100%);
+      border-radius: 0 0 6px 6px;
+    }
+    #text-drag-handle svg { width: 15px; height: 15px; }
+
+    #text-overlay {
+      display: block;
+      min-width: 40px;
       margin: 0;
-      padding: 2px 4px;
+      padding: 2px;
       border: 1.5px dashed #292724;
       background: rgba(255, 255, 255, 0.55);
       outline: none;
       resize: none;
       overflow: hidden;
+      white-space: pre;
       line-height: 1.3;
       font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", sans-serif;
     }
@@ -258,6 +291,14 @@
       background: none;
       cursor: pointer;
     }
+
+    .check-row {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      cursor: pointer;
+    }
+    .check-row input[type="checkbox"] { accent-color: #292724; cursor: pointer; }
 
     .select-row {
       display: flex;
@@ -451,7 +492,12 @@
         <div id="selection-box"></div>
         <div id="brush-cursor"></div>
         <canvas id="arrow-preview"></canvas>
-        <textarea id="text-overlay" rows="1"></textarea>
+        <div id="text-box">
+          <div id="text-drag-handle" title="ドラッグで移動" aria-label="テキストボックスを移動">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v16M4 12h16M12 4 9.5 6.5M12 4l2.5 2.5M12 20l-2.5-2.5M12 20l2.5-2.5M4 12l2.5-2.5M4 12l2.5 2.5M20 12l-2.5-2.5M20 12l-2.5 2.5"/></svg>
+          </div>
+          <textarea id="text-overlay" rows="1" wrap="off" spellcheck="false"></textarea>
+        </div>
       </div>
       <div id="toast"></div>
     </div>
@@ -506,20 +552,21 @@
       <div class="tool-panel-content" data-tool="text" hidden>
         <label class="select-row">
           書体
-          <select id="text-font-input">
-            <option value="gothic">ゴシック</option>
-            <option value="mincho">明朝</option>
-          </select>
+          <select id="text-font-input"></select>
         </label>
         <div class="slider-row">
           <label for="text-size-input">サイズ</label>
-          <input type="range" id="text-size-input" min="12" max="96" step="2" value="28">
+          <input type="range" id="text-size-input" min="8" max="400" step="2" value="28">
           <span id="text-size-label">28px</span>
         </div>
         <label class="color-row">
           色
           <input type="color" id="text-color-input" value="#e0245e">
         </label>
+        <div class="color-row">
+          <label class="check-row"><input type="checkbox" id="text-bg-toggle" checked>背景</label>
+          <input type="color" id="text-bg-color-input" value="#000000" aria-label="背景色">
+        </div>
         <div class="panel-actions">
           <button class="icon-btn icon-btn-ghost" id="text-cancel-btn" title="キャンセル" aria-label="キャンセル" disabled>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 5l14 14M19 5 5 19"/></svg>
@@ -565,7 +612,7 @@
         <dd>「明るさ」「コントラスト」のスライダーで見た目を調整し、チェックのボタンで確定します。✕でやり直せます。</dd>
         <hr>
         <dt>テキスト</dt>
-        <dd>画像の上をタップ/クリックすると文字を入力できます。「書体」「サイズ」「色」を選び、チェックのボタンか Enter で確定します。✕やEscでキャンセルできます。</dd>
+        <dd>画像の上をタップ/クリックすると文字を入力できます。「書体」「サイズ」「色」「背景」を選び、チェックのボタンか Enter で確定します。左上のつまみをドラッグすると位置を動かせます。✕やEscでキャンセルできます。</dd>
         <hr>
         <dt>矢印</dt>
         <dd>画像の上をドラッグすると矢印を描けます。「太さ」「色」を調整できます。</dd>
@@ -650,16 +697,44 @@
     let brightnessValue = 0;
     let contrastValue   = 0;
 
-    const TEXT_FONT_STACKS = {
-      gothic: '-apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", sans-serif',
-      mincho: '"Hiragino Mincho ProN", "Yu Mincho", "Noto Serif JP", serif',
-    };
+    /*
+     * 書体の候補。
+     * probe を持つものは、そこに挙げたフォントが1つも入っていない環境では選択肢に出さない。
+     * 未搭載の書体を並べても sans-serif に落ちて「同じ見た目の選択肢」が増えるだけなので、
+     * 実際に見た目が変わるものだけを見せる。
+     * probe のないもの（ゴシック/明朝/等幅/太字）はどの環境でも差が出るので常に出す。
+     */
+    const TEXT_FONTS = [
+      { id: 'gothic',      label: 'ゴシック',   weight: 400,
+        stack: '-apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", sans-serif' },
+      { id: 'gothic-bold', label: 'ゴシック 太', weight: 800,
+        stack: '-apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", sans-serif' },
+      { id: 'mincho',      label: '明朝',       weight: 400,
+        stack: '"Hiragino Mincho ProN", "Yu Mincho", "YuMincho", "Noto Serif JP", "MS PMincho", serif' },
+      { id: 'mincho-bold', label: '明朝 太',    weight: 700,
+        stack: '"Hiragino Mincho ProN", "Yu Mincho", "YuMincho", "Noto Serif JP", "MS PMincho", serif' },
+      { id: 'maru',        label: '丸ゴシック',  weight: 400,
+        probe: ['Hiragino Maru Gothic ProN', 'Hiragino Maru Gothic Pro', 'Zen Maru Gothic', 'Kosugi Maru'],
+        stack: '"Hiragino Maru Gothic ProN", "Hiragino Maru Gothic Pro", "Zen Maru Gothic", "Kosugi Maru", sans-serif' },
+      { id: 'kyokasho',    label: '教科書体',    weight: 400,
+        probe: ['UD デジタル 教科書体 N-R', 'UD デジタル 教科書体 NK-R', 'Klee One', 'Klee', 'YuKyokasho'],
+        stack: '"UD デジタル 教科書体 N-R", "UD デジタル 教科書体 NK-R", "Klee One", "Klee", "YuKyokasho", serif' },
+      { id: 'pop',         label: 'ポップ体',    weight: 400,
+        probe: ['HGP創英角ﾎﾟｯﾌﾟ体', 'HGS創英角ﾎﾟｯﾌﾟ体', 'HG創英角ﾎﾟｯﾌﾟ体'],
+        stack: '"HGP創英角ﾎﾟｯﾌﾟ体", "HGS創英角ﾎﾟｯﾌﾟ体", "HG創英角ﾎﾟｯﾌﾟ体", sans-serif' },
+      { id: 'mono',        label: '等幅',       weight: 400,
+        stack: 'ui-monospace, SFMono-Regular, Menlo, Consolas, "Osaka-Mono", "MS Gothic", monospace' },
+    ];
 
-    let textEditing   = false;
-    let textBufferPos = null; // {x,y} in canvas buffer coordinates
-    let textFontSize  = 28;
-    let textFont      = 'gothic';
-    let textColor     = '#e0245e';
+    let textEditing    = false;
+    let textBoxCss     = null;  // {x,y} #canvas-inner（= canvas 左上）基準の css 座標
+    let textFontSize   = 28;
+    let textFont       = 'gothic';
+    let textColor      = '#e0245e';
+    let textBgOn       = true;
+    let textBgColor    = '#000000';
+    let textDragging   = false;
+    let textDragOffset = null;
 
     let arrowDragging     = false;
     let arrowStartCss     = null; // {x,y} in css coordinates
@@ -698,6 +773,10 @@
     const textSizeInput  = document.getElementById('text-size-input');
     const textSizeLabel  = document.getElementById('text-size-label');
     const textColorInput = document.getElementById('text-color-input');
+    const textBox        = document.getElementById('text-box');
+    const textDragHandle = document.getElementById('text-drag-handle');
+    const textBgToggle   = document.getElementById('text-bg-toggle');
+    const textBgInput    = document.getElementById('text-bg-color-input');
     const textApplyBtn   = document.getElementById('text-apply-btn');
     const textCancelBtn  = document.getElementById('text-cancel-btn');
 
@@ -814,6 +893,54 @@
       textFont = textFontInput.value;
       updateTextOverlayStyle();
     });
+
+    textBgToggle.addEventListener('change', () => {
+      textBgOn = textBgToggle.checked;
+      updateTextOverlayStyle();
+    });
+
+    textBgInput.addEventListener('input', () => {
+      textBgColor = textBgInput.value;
+      if (!textBgOn) { textBgOn = true; textBgToggle.checked = true; }
+      updateTextOverlayStyle();
+    });
+
+    // テキストボックス上の操作を canvas-inner のハンドラへ伝えない。
+    // 伝わると「新しいテキストを始める」と解釈されて編集中のものが確定してしまう。
+    textBox.addEventListener('mousedown', (e) => e.stopPropagation());
+    textBox.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: true });
+
+    textDragHandle.addEventListener('pointerdown', (e) => {
+      if (!textEditing || !textBoxCss) return;
+      e.preventDefault();
+      e.stopPropagation();
+      textDragging = true;
+      const rect = canvas.getBoundingClientRect();
+      textDragOffset = {
+        x: e.clientX - rect.left - textBoxCss.x,
+        y: e.clientY - rect.top  - textBoxCss.y,
+      };
+      try { textDragHandle.setPointerCapture(e.pointerId); } catch (_) {}
+    });
+
+    textDragHandle.addEventListener('pointermove', (e) => {
+      if (!textDragging) return;
+      e.preventDefault();
+      const rect = canvas.getBoundingClientRect();
+      // 枠が画像の外へ完全に出てしまわないところで止める
+      const x = Math.max(0, Math.min(rect.width  - 12, e.clientX - rect.left - textDragOffset.x));
+      const y = Math.max(0, Math.min(rect.height - 12, e.clientY - rect.top  - textDragOffset.y));
+      textBoxCss = { x, y };
+      applyTextBoxPosition();
+    });
+
+    function endTextDrag(e) {
+      if (!textDragging) return;
+      textDragging = false;
+      try { textDragHandle.releasePointerCapture(e.pointerId); } catch (_) {}
+    }
+    textDragHandle.addEventListener('pointerup', endTextDrag);
+    textDragHandle.addEventListener('pointercancel', endTextDrag);
 
     textSizeInput.addEventListener('input', () => {
       textFontSize = parseInt(textSizeInput.value, 10);
@@ -952,8 +1079,7 @@
 
       if (tool === 'text') {
         if (textEditing) commitText();
-        const b = cssToBuffer(p.x, p.y);
-        startTextAt(p.x, p.y, b.x, b.y);
+        startTextAt(p.x, p.y);
         return;
       }
 
@@ -1139,60 +1265,161 @@
     }
 
     // ─── テキスト ─────────────────────────────────────────
-    function textCssFontSize() {
+    const fontProbeCtx = document.createElement('canvas').getContext('2d');
+
+    /** そのフォントが端末に入っているか。総称フォントと字幅が変わるかで判定する */
+    function fontInstalled(family) {
+      const sample = 'あア亜漢字ABCMWil0';
+      return ['monospace', 'serif', 'sans-serif'].some((generic) => {
+        fontProbeCtx.font = `72px ${generic}`;
+        const base = fontProbeCtx.measureText(sample).width;
+        fontProbeCtx.font = `72px "${family}", ${generic}`;
+        return fontProbeCtx.measureText(sample).width !== base;
+      });
+    }
+
+    function buildFontOptions() {
+      const available = TEXT_FONTS.filter((f) => !f.probe || f.probe.some(fontInstalled));
+      textFontInput.innerHTML = '';
+      for (const f of available) {
+        const opt = document.createElement('option');
+        opt.value = f.id;
+        opt.textContent = f.label;
+        // 選択肢自体をその書体で描く。開いた時点でどう変わるかが分かる
+        opt.style.fontFamily = f.stack;
+        opt.style.fontWeight = f.weight;
+        textFontInput.appendChild(opt);
+      }
+      if (!available.some((f) => f.id === textFont)) textFont = available[0].id;
+      textFontInput.value = textFont;
+    }
+
+    function fontDef(id) {
+      return TEXT_FONTS.find((f) => f.id === id) || TEXT_FONTS[0];
+    }
+
+    /** css 座標 → バッファ座標の倍率 */
+    function bufferScale() {
       const rect = canvas.getBoundingClientRect();
-      const scale = rect.width ? canvas.width / rect.width : 1;
-      return textFontSize / scale;
+      return rect.width ? canvas.width / rect.width : 1;
+    }
+
+    /** 文字まわりの余白（バッファ座標）。背景色を敷いたときの見た目を整える */
+    function textPadBuffer() {
+      return Math.max(2, Math.round(textFontSize * 0.18));
+    }
+
+    function canvasFontSpec() {
+      const f = fontDef(textFont);
+      return `${f.weight} ${textFontSize}px ${f.stack}`;
+    }
+
+    function textBorderWidth() {
+      return parseFloat(getComputedStyle(textOverlay).borderTopWidth) || 0;
     }
 
     function updateTextOverlayStyle() {
-      textOverlay.style.color = textColor;
-      textOverlay.style.fontSize = textCssFontSize() + 'px';
-      textOverlay.style.fontFamily = TEXT_FONT_STACKS[textFont];
-    }
-
-    function autoResizeTextOverlay() {
-      textOverlay.style.height = 'auto';
-      textOverlay.style.height = textOverlay.scrollHeight + 'px';
-    }
-
-    function startTextAt(cssX, cssY, bx, by) {
-      textEditing = true;
-      textBufferPos = { x: bx, y: by };
-      textOverlay.value = '';
-      textOverlay.style.left  = cssX + 'px';
-      textOverlay.style.top   = cssY + 'px';
-      const rect = canvas.getBoundingClientRect();
-      textOverlay.style.width = Math.max(80, Math.min(240, rect.width - cssX - 4)) + 'px';
-      updateTextOverlayStyle();
+      const f = fontDef(textFont);
+      const scale = bufferScale();
+      textOverlay.style.color      = textColor;
+      textOverlay.style.fontSize   = (textFontSize / scale) + 'px';
+      textOverlay.style.fontFamily = f.stack;
+      textOverlay.style.fontWeight = f.weight;
+      textOverlay.style.padding    = (textPadBuffer() / scale) + 'px';
+      // 背景が有効ならその色で、無効なら下の画像が透ける薄い白で（入力枠の目印）
+      textOverlay.style.background = textBgOn ? textBgColor : 'rgba(255, 255, 255, 0.55)';
       autoResizeTextOverlay();
-      textOverlay.style.display = 'block';
+    }
+
+    /**
+     * 入力枠を中身ぴったりに広げる。
+     * 折り返しを禁止（wrap="off" / white-space: pre）したうえで実際の字幅から
+     * 幅を決めることで、入力中の見た目と確定結果を一致させている。
+     */
+    function autoResizeTextOverlay() {
+      const scale  = bufferScale();
+      const pad    = textPadBuffer() / scale;
+      const border = textBorderWidth();
+
+      fontProbeCtx.font = canvasFontSpec();
+      let maxW = 0;
+      for (const line of textOverlay.value.split('\n')) {
+        maxW = Math.max(maxW, fontProbeCtx.measureText(line).width);
+      }
+
+      textOverlay.style.width  = Math.max(40, maxW / scale + pad * 2 + border * 2 + 2) + 'px';
+      textOverlay.style.height = 'auto';
+      textOverlay.style.height = (textOverlay.scrollHeight + border * 2) + 'px';
+    }
+
+    const TEXT_HANDLE_H = 26;
+
+    function applyTextBoxPosition() {
+      if (!textBoxCss) return;
+      textBox.style.left = textBoxCss.x + 'px';
+      textBox.style.top  = textBoxCss.y + 'px';
+      // 上に出すと #canvas-wrap の overflow:hidden で切れてしまう位置なら下へ回す
+      textDragHandle.classList.toggle('below', textBoxCss.y < TEXT_HANDLE_H);
+    }
+
+    function startTextAt(cssX, cssY) {
+      textEditing = true;
+      textBoxCss = { x: cssX, y: cssY };
+      textOverlay.value = '';
+      applyTextBoxPosition();
+      updateTextOverlayStyle();
+      textBox.style.display = 'block';
       textApplyBtn.disabled  = false;
       textCancelBtn.disabled = false;
       textOverlay.focus();
     }
 
     function hideTextOverlay() {
-      textEditing = false;
-      textBufferPos = null;
-      textOverlay.style.display = 'none';
+      textEditing  = false;
+      textDragging = false;
+      textBoxCss   = null;
+      textBox.style.display = 'none';
       textOverlay.value = '';
       textApplyBtn.disabled  = true;
       textCancelBtn.disabled = true;
     }
 
     function commitText() {
-      if (!textEditing) return;
+      if (!textEditing || !textBoxCss) return;
       const value = textOverlay.value;
       if (value.trim() === '') { hideTextOverlay(); return; }
 
       pushHistory();
-      const lines = value.split('\n');
-      ctx.fillStyle = textColor;
-      ctx.font = `${textFontSize}px ${TEXT_FONT_STACKS[textFont]}`;
-      ctx.textBaseline = 'top';
+
+      const scale  = bufferScale();
+      const pad    = textPadBuffer();
+      const border = textBorderWidth();
+      const lines  = value.split('\n');
       const lineHeight = Math.round(textFontSize * 1.3);
-      lines.forEach((line, i) => ctx.fillText(line, textBufferPos.x, textBufferPos.y + i * lineHeight));
+
+      // 入力枠の内側（枠線の内）の左上。ここが背景の左上になる
+      const originX = (textBoxCss.x + border) * scale;
+      const originY = (textBoxCss.y + border) * scale;
+
+      ctx.save();
+      ctx.font = canvasFontSpec();
+      ctx.textBaseline = 'top';
+
+      if (textBgOn) {
+        let maxW = 0;
+        for (const line of lines) maxW = Math.max(maxW, ctx.measureText(line).width);
+        ctx.fillStyle = textBgColor;
+        ctx.fillRect(originX, originY, maxW + pad * 2, lineHeight * lines.length + pad * 2);
+      }
+
+      // CSS の line-height 1.3 は各行の上下に (1.3-1)/2 em ずつ余白を作るが、
+      // canvas の textBaseline='top' にはそれがない。その分だけ下げて見た目を合わせる。
+      const halfLeading = (lineHeight - textFontSize) / 2;
+      ctx.fillStyle = textColor;
+      lines.forEach((line, i) => {
+        ctx.fillText(line, originX + pad, originY + pad + halfLeading + i * lineHeight);
+      });
+      ctx.restore();
 
       hideTextOverlay();
       showToast('テキストを追加しました');
@@ -1201,6 +1428,8 @@
     function cancelText() {
       hideTextOverlay();
     }
+
+    buildFontOptions();
 
     // ─── 矢印 ─────────────────────────────────────────────
     function drawArrow(targetCtx, x1, y1, x2, y2, color, thickness) {
